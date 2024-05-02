@@ -20,7 +20,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import ru.iu3.fclient.databinding.ActivityMainBinding;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements TransactionEvents{
 
     // Used to load the 'fclient' library on application startup.
     static {
@@ -47,10 +47,14 @@ public class MainActivity extends AppCompatActivity {
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
-                        Intent data1 = result.getData();
+                        Intent data = result.getData();
                         // обработка результата
-                        String pin = data1.getStringExtra("pin");
-                        Toast.makeText(MainActivity.this, pin, Toast.LENGTH_SHORT).show();
+//                        String pin = data.getStringExtra("pin");
+//                        Toast.makeText(MainActivity.this, pin, Toast.LENGTH_SHORT).show();
+                        pin = data.getStringExtra("pin");
+                        synchronized (MainActivity.this) {
+                            MainActivity.this.notifyAll();
+                        }
                     }
                 });
 
@@ -87,14 +91,71 @@ public class MainActivity extends AppCompatActivity {
 //        startActivity(it);
 //    }
 
-    public void onButtonClick(View v)
+//    public void onButtonClick(View v)
+//    {
+//        Intent it = new Intent(this, PinpadActivity.class);
+////        startActivity(it);
+//        activityResultLauncher.launch(it);
+//    }
+
+    //обработчик транзакции с созданием потока в Java
+//      public void onButtonClick(View v)
+//    {
+//
+//        new Thread(()-> {
+//            try {
+//                byte[] trd = stringToHex("9F0206000000000100");
+//                boolean ok = transaction(trd);
+//                runOnUiThread(()-> {
+//                    Toast.makeText(MainActivity.this, ok ? "ok" : "failed", Toast.LENGTH_SHORT).show();
+//                });
+//
+//            } catch (Exception ex) {
+//                // todo: log error
+//            }
+//        }).start();
+//
+//    }
+
+//обработчик транзакции без необходимости выполнять ее в отедльном потоке, созданном в JAVA
+      public void onButtonClick(View v)
     {
-        Intent it = new Intent(this, PinpadActivity.class);
-//        startActivity(it);
-        activityResultLauncher.launch(it);
+        byte[] trd = stringToHex("9F0206000000000100");
+        transaction(trd);
     }
 
 
+    //при получении инфы о том, что транзакция отработала выводим текст
+    @Override
+    public void transactionResult(boolean result) {
+        runOnUiThread(()-> {
+            Toast.makeText(MainActivity.this, result ? "ok" : "failed", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+
+
+
+
+
+    private String pin;
+
+    @Override
+    public String enterPin(int ptc, String amount) {
+        pin = new String();
+        Intent it = new Intent(MainActivity.this, PinpadActivity.class);
+        it.putExtra("ptc", ptc);
+        it.putExtra("amount", amount);
+        synchronized (MainActivity.this) {
+            activityResultLauncher.launch(it);
+            try {
+                MainActivity.this.wait();
+            } catch (Exception ex) {
+                //todo: log error
+            }
+        }
+        return pin;
+    }
 
 
 
@@ -125,4 +186,9 @@ public class MainActivity extends AppCompatActivity {
     public static native byte[] encrypt(byte[] key, byte[] data);
 
     public static native byte[] decrypt(byte[] key, byte[] data);
+
+    public native boolean transaction(byte[] trd);
+
+
+
 }
