@@ -9,14 +9,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.IOUtils;
 
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ru.iu3.fclient.databinding.ActivityMainBinding;
 
@@ -118,11 +125,11 @@ public class MainActivity extends AppCompatActivity implements TransactionEvents
 //    }
 
 //обработчик транзакции без необходимости выполнять ее в отедльном потоке, созданном в JAVA
-      public void onButtonClick(View v)
-    {
-        byte[] trd = stringToHex("9F0206000000000100");
-        transaction(trd);
-    }
+//      public void onButtonClick(View v)
+//    {
+//        byte[] trd = stringToHex("9F0206000000000100");
+//        transaction(trd);
+//    }
 
 
     //при получении инфы о том, что транзакция отработала выводим текст
@@ -132,11 +139,6 @@ public class MainActivity extends AppCompatActivity implements TransactionEvents
             Toast.makeText(MainActivity.this, result ? "ok" : "failed", Toast.LENGTH_SHORT).show();
         });
     }
-
-
-
-
-
 
     private String pin;
 
@@ -156,6 +158,72 @@ public class MainActivity extends AppCompatActivity implements TransactionEvents
         }
         return pin;
     }
+
+
+
+
+
+    public void onButtonClick(View v)
+    {
+        testHttpClient();
+    }
+
+
+    //функия для получения title страницы
+    protected void testHttpClient()
+    {
+        new Thread(() -> {
+            try {
+                HttpURLConnection uc = (HttpURLConnection)
+                        (new URL("https://www.wikipedia.org").openConnection());
+                InputStream inputStream = uc.getInputStream();
+                String html = IOUtils.toString(inputStream);
+                String title = getPageTitle(html);
+                runOnUiThread(() ->
+                {
+                    Toast.makeText(this, title, Toast.LENGTH_LONG).show();
+                });
+
+            } catch (Exception ex) {
+                Log.e("fapptag", "Http client fails", ex);
+            }
+        }).start();
+    }
+
+    //вытягиваем title из html кода (по тупому, поиском подстрок)
+//    protected String getPageTitle(String html)
+//    {
+//        int pos = html.indexOf("<title");
+//        String p="not found";
+//        if (pos >= 0)
+//        {
+//            int pos2 = html.indexOf("<", pos + 1);
+//            if (pos >= 0)
+//                p = html.substring(pos + 7, pos2);
+//        }
+//        return p;
+//    }
+
+
+
+    //вытягиваем title из html кода (с использованием регулярок)
+    protected String getPageTitle(String html)
+    {
+        Pattern pattern = Pattern.compile("<title>(.+?)</title>", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(html);
+        String p;
+        if (matcher.find())
+            p = matcher.group(1);
+        else
+            p = "Not found";
+        return p;
+    }
+
+
+
+
+
+
 
 
 
