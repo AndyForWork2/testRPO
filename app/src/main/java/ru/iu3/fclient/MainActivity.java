@@ -1,9 +1,22 @@
 package ru.iu3.fclient;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+
+
 
 import ru.iu3.fclient.databinding.ActivityMainBinding;
 
@@ -16,6 +29,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ActivityMainBinding binding;
+    ActivityResultLauncher activityResultLauncher;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,12 +40,80 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        int res = initRng();
-        byte[] v = randomBytes(10);
+//        int res = initRng();
+//        byte[] v = randomBytes(10);
+
+        activityResultLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK) {
+                        Intent data1 = result.getData();
+                        // обработка результата
+                        String pin = data1.getStringExtra("pin");
+                        Toast.makeText(MainActivity.this, pin, Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+
+
         // Example of a call to a native method
-        TextView tv = binding.sampleText;
-        tv.setText(stringFromJNI());
+//        TextView tv = binding.sampleText;
+//        tv.setText(stringFromJNI());
     }
+
+    //тестовый код
+//    public void onButtonClick(View v)
+//    {
+//        Toast.makeText(this, "Hello", Toast.LENGTH_SHORT).show();
+//    }
+
+
+    //задаем ключ, кодируем hex, декодируем hex и выводим на экран
+//    public void onButtonClick(View v)
+//    {
+//        byte[] key = stringToHex("0123456789ABCDEF0123456789ABCDE0");
+//        byte[] enc = encrypt(key, stringToHex("000000000000000102"));
+//        byte[] dec = decrypt(key, enc);
+//        String s = new String(Hex.encodeHex(dec)).toUpperCase();
+//        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+//    }
+
+
+
+//    //просто вызов другого активити (возвращенное значение не созранится
+//    public void onButtonClick(View v)
+//    {
+//        Intent it = new Intent(this, PinpadActivity.class);
+//        startActivity(it);
+//    }
+
+    public void onButtonClick(View v)
+    {
+        Intent it = new Intent(this, PinpadActivity.class);
+//        startActivity(it);
+        activityResultLauncher.launch(it);
+    }
+
+
+
+
+
+    //функция перевода из строки в hex
+    public static byte[] stringToHex(String s)
+    {
+        byte[] hex;
+        try
+        {
+            hex = Hex.decodeHex(s.toCharArray());
+        }
+        catch (DecoderException ex)
+        {
+            hex = null;
+        }
+        return hex;
+    }
+
+
 
     /**
      * A native method that is implemented by the 'fclient' native library,

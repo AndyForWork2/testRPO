@@ -20,6 +20,8 @@ char *personalization = "fclient-sample-app";
 #define SLOG_INFO(...) android_logger->info( __VA_ARGS__ )
 auto android_logger = spdlog::android_logger_mt("android", "fclient_ndk");
 
+
+//базовый фрагмент, просто вывод в лог строчки
 extern "C" JNIEXPORT jstring JNICALL
 Java_ru_iu3_fclient_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) {
     std::string hello = "Hello from C++";
@@ -28,7 +30,7 @@ Java_ru_iu3_fclient_MainActivity_stringFromJNI(JNIEnv* env, jobject /* this */) 
     return env->NewStringUTF(hello.c_str());
 }
 
-
+//задаем сид для радномной генерации
 extern "C" JNIEXPORT jint JNICALL
 Java_ru_iu3_fclient_MainActivity_initRng(JNIEnv *env, jclass clazz) {
     mbedtls_entropy_init( &entropy );
@@ -39,6 +41,7 @@ Java_ru_iu3_fclient_MainActivity_initRng(JNIEnv *env, jclass clazz) {
                                   strlen( personalization ) );
 }
 
+//выполняем рандомную генерацию
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_ru_iu3_fclient_MainActivity_randomBytes(JNIEnv *env, jclass, jint no) {
     uint8_t * buf = new uint8_t [no];
@@ -49,6 +52,7 @@ Java_ru_iu3_fclient_MainActivity_randomBytes(JNIEnv *env, jclass, jint no) {
     return rnd;
 }
 
+//шифрование
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_ru_iu3_fclient_MainActivity_encrypt(JNIEnv *env, jclass, jbyteArray key, jbyteArray data)
 {
@@ -82,7 +86,7 @@ Java_ru_iu3_fclient_MainActivity_encrypt(JNIEnv *env, jclass, jbyteArray key, jb
     return dout;
 }
 
-
+//дешифрование
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_ru_iu3_fclient_MainActivity_decrypt(JNIEnv *env, jclass, jbyteArray key, jbyteArray data)
 {
